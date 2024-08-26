@@ -1,9 +1,12 @@
 //CODIGO PARA LEER LA ENTRADA ADC, MANDAR SEÑALES PWM A LOS LEDS, SERVO
-//Y DISPLAY DE 7 SEGMENTOS
-
+//DISPLAY DE 7 SEGMENTOS Y ENVIAR LOS DATOS A ADAFRUIT
 #include <Arduino.h> //Librería de Arduino
 #include <driver/adc.h> //Librería para controlar el ADC
 #include "driver/ledc.h" //Librería para controlar las señales PWM
+#include "config.h" //Librería para Adafruit
+
+//Configuración para el feed de Adafruit
+AdafruitIO_Feed *tempCanal = io.feed("ValorTemperatura");
 
 //Pines para las entradas
 #define Boton1 32
@@ -35,12 +38,14 @@
 #define freqLeds 50
 #define resolucinLeds 10
 
+
 //Variables para controlar el debounce del botón
 unsigned long t_Boton = 0;
 unsigned long ultimo_t_Boton = 0;
 
 //Variables globales
 int AnguloActualServo = 24, AnguloLlegadaServo = 24, Temperatura = 0, Centenas = 0, Decenas = 0, Unidades = 0, NumeroDisplay = 0;
+float TemperaturaAdafruit = 0.0;
 bool Encender = false;
 
 //Función para la interrupción del botón
@@ -50,6 +55,7 @@ void IRAM_ATTR Prueba() {
     ultimo_t_Boton = t_Boton;
     Encender = true;
     Temperatura = analogReadMilliVolts(SensorTemp);
+    TemperaturaAdafruit = Temperatura*0.1;
   }
 }
 
@@ -59,6 +65,8 @@ void EncenderLeds (void);
 void initPWMLeds(void);
 //Definir función para encender el display de 7 segmentos
 void EncenderDisplay7(int NumeroDisplay);
+//Definir función para enviar datos de Adafruit
+void EnviarAdafruit (void);
 
 void setup() {
   // Configurar pines como entradas
@@ -87,20 +95,39 @@ void setup() {
   // Interupcion para medir la temperatura
   attachInterrupt(Boton1, Prueba, FALLING);
 
-  //Iniciar los pines para señales PWM
-  initPWMLeds();
-
   //Configuración de la entrada analógica
   analogReadResolution(12);
   analogSetAttenuation(ADC_11db);
 
+  //Iniciar los pines para señales PWM
+  initPWMLeds();
+
   //Configurar pines de ADC
   analogSetVRefPin(PinReferencia);
   pinMode(SensorTemp, INPUT);
+
+  //Espera para abrir el monitor serial
+  while(! Serial);
+
+  Serial.print("Connecting to Adafruit IO");
+
+  //Conecxión a Adafruit
+  io.connect();
+
+  //Esperar para conectarse
+  while(io.status() < AIO_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  //Mensaje para confirmar la conecxión
+  Serial.println();
+  Serial.println(io.statusText());
+
 }
 
 void loop() {
-//Proceso de la señal ADC para el Display
+//Mantiene la conecxión con Adafruit
+//Proceso de la señal ADC a valores de temperatura
   Centenas = Temperatura/100;
   Decenas = (Temperatura - (Centenas*100))/10;
   Unidades = (Temperatura - (Centenas*100) - (Decenas*10));
@@ -164,6 +191,7 @@ void EncenderLeds (void) {
     AnguloActualServo = AnguloLlegadaServo;
   }
 }
+
 void initPWMLeds(void){
   // Paso 4.1:
   ledcSetup(CanalLedVerde, freqLeds, resolucinLeds);
@@ -276,4 +304,11 @@ void EncenderDisplay7 (int NumeroDisplay) {
       digitalWrite(PinSegmentoG, LOW);
       break;
   }
+}
+
+void EnviarAdafruit (void) {
+  io.run();
+  Serial.print("sending -> ");
+  Serial.println(TemperaturaAdafruit);
+  tempCanal->save(TemperaturaAdafruit);
 }
