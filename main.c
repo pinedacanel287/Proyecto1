@@ -1,4 +1,4 @@
-//CODIGO PARA LEER LA ENTRADA ADC Y MANDAR SEÑALES PWM A LOS LEDS
+//CODIGO PARA LEER LA ENTRADA ADC, MANDAR SEÑALES PWM A LOS LEDS Y SERVO
 
 #include <Arduino.h> //Librería de Arduino
 #include <driver/adc.h> //Librería para controlar el ADC
@@ -13,11 +13,13 @@
 #define PinVerde 15 
 #define PinAmarillo 2
 #define PinRojo 4
+#define PinServo 26
 
 //Definir canal, frecuencia y resolución para las señales pwm de los LEDS
 #define CanalLedVerde 1
 #define CanalLedAmarillo 2
 #define CanalLedRojo 3
+#define CanalServo 4
 #define freqLeds 50
 #define resolucinLeds 10
 
@@ -26,7 +28,7 @@ unsigned long t_Boton = 0;
 unsigned long ultimo_t_Boton = 0;
 
 //Variables globales
-int Temperatura = 0;
+int AnguloActualServo = 24, AnguloLlegadaServo = 24, Temperatura = 0;
 bool Encender = false;
 
 //Función para la interrupción del botón
@@ -52,6 +54,7 @@ void setup() {
   pinMode(PinVerde, OUTPUT);
   pinMode(PinAmarillo, OUTPUT);
   pinMode(PinRojo, OUTPUT);
+  pinMode(PinServo, OUTPUT);
 
   //Comunicación serial
   Serial.begin(115200);
@@ -96,8 +99,19 @@ void EncenderLeds (void) {
     ledcWrite(CanalLedAmarillo, 0);
     ledcWrite(CanalLedRojo, 512);
   }
+  if (AnguloActualServo < AnguloLlegadaServo) {
+    for (int i = AnguloActualServo; i <= AnguloLlegadaServo; i++) {
+      ledcWrite(CanalServo, i);
+    }
+    AnguloActualServo = AnguloLlegadaServo;
+  }
+  if (AnguloActualServo > AnguloLlegadaServo) {
+    for (int i = AnguloActualServo; i >= AnguloLlegadaServo; i--) {
+      ledcWrite(CanalServo, i);
+    }
+    AnguloActualServo = AnguloLlegadaServo;
+  }
 }
-
 void initPWMLeds(void){
   // Paso 4.1:
   ledcSetup(CanalLedVerde, freqLeds, resolucinLeds);
