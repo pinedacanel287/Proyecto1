@@ -1,4 +1,5 @@
-//CODIGO PARA LEER LA ENTRADA ADC, MANDAR SEÑALES PWM A LOS LEDS Y SERVO
+//CODIGO PARA LEER LA ENTRADA ADC, MANDAR SEÑALES PWM A LOS LEDS, SERVO
+//Y DISPLAY DE 7 SEGMENTOS
 
 #include <Arduino.h> //Librería de Arduino
 #include <driver/adc.h> //Librería para controlar el ADC
@@ -14,6 +15,17 @@
 #define PinAmarillo 2
 #define PinRojo 4
 #define PinServo 26
+#define PinDigito1 27
+#define PinDigito2 14
+#define PinDigito3 12
+#define PinSegmentoA 22
+#define PinSegmentoB 21
+#define PinSegmentoC 18
+#define PinSegmentoD 17
+#define PinSegmentoE 13
+#define PinSegmentoF 19 
+#define PinSegmentoG 25
+#define PinSegmentoP 5
 
 //Definir canal, frecuencia y resolución para las señales pwm de los LEDS
 #define CanalLedVerde 1
@@ -28,7 +40,7 @@ unsigned long t_Boton = 0;
 unsigned long ultimo_t_Boton = 0;
 
 //Variables globales
-int AnguloActualServo = 24, AnguloLlegadaServo = 24, Temperatura = 0;
+int AnguloActualServo = 24, AnguloLlegadaServo = 24, Temperatura = 0, Centenas = 0, Decenas = 0, Unidades = 0, NumeroDisplay = 0;
 bool Encender = false;
 
 //Función para la interrupción del botón
@@ -45,6 +57,8 @@ void IRAM_ATTR Prueba() {
 void EncenderLeds (void);
 //Definir función para iniciar las señales PWM
 void initPWMLeds(void);
+//Definir función para encender el display de 7 segmentos
+void EncenderDisplay7(int NumeroDisplay);
 
 void setup() {
   // Configurar pines como entradas
@@ -55,6 +69,17 @@ void setup() {
   pinMode(PinAmarillo, OUTPUT);
   pinMode(PinRojo, OUTPUT);
   pinMode(PinServo, OUTPUT);
+  pinMode(PinDigito1, OUTPUT);
+  pinMode(PinDigito2, OUTPUT);
+  pinMode(PinDigito3, OUTPUT);
+  pinMode(PinSegmentoA, OUTPUT);
+  pinMode(PinSegmentoB, OUTPUT);
+  pinMode(PinSegmentoC, OUTPUT);
+  pinMode(PinSegmentoD, OUTPUT);
+  pinMode(PinSegmentoE, OUTPUT);
+  pinMode(PinSegmentoF, OUTPUT);
+  pinMode(PinSegmentoG, OUTPUT);
+  pinMode(PinSegmentoP, OUTPUT);
 
   //Comunicación serial
   Serial.begin(115200);
@@ -75,12 +100,39 @@ void setup() {
 }
 
 void loop() {
-  //Enciende los LEDs
+//Proceso de la señal ADC para el Display
+  Centenas = Temperatura/100;
+  Decenas = (Temperatura - (Centenas*100))/10;
+  Unidades = (Temperatura - (Centenas*100) - (Decenas*10));
+  AnguloLlegadaServo = map(Temperatura, 0, 1000, 24, 84);
+//Enciende los LEDs
   if (Encender) {
     EncenderLeds();
+    EnviarAdafruit();
     Encender = false;
   }
-  delay(10);
+//Muestra los valores de temperatura en el Display de 7 segmentos
+  NumeroDisplay = Centenas;
+  digitalWrite(PinDigito1, HIGH);
+  digitalWrite(PinDigito2, LOW);
+  digitalWrite(PinDigito3, LOW);
+  digitalWrite(PinSegmentoP, LOW);
+  EncenderDisplay7(NumeroDisplay);
+  delay(5);
+  NumeroDisplay = Decenas;
+  digitalWrite(PinDigito1, LOW);
+  digitalWrite(PinDigito2, HIGH);
+  digitalWrite(PinDigito3, LOW);
+  digitalWrite(PinSegmentoP, HIGH);
+  EncenderDisplay7(NumeroDisplay);
+  delay(5);
+  NumeroDisplay = Unidades;
+  digitalWrite(PinDigito1, LOW);
+  digitalWrite(PinDigito2, LOW);
+  digitalWrite(PinDigito3, HIGH);
+  digitalWrite(PinSegmentoP, LOW);
+  EncenderDisplay7(NumeroDisplay);
+  delay(5);
 }
 
 //Función para encender los LEDs
@@ -128,4 +180,100 @@ void initPWMLeds(void){
   ledcWrite(CanalLedAmarillo, 0);
   ledcWrite(CanalLedRojo, 0);
   ledcWrite(CanalServo, 24);
+}
+
+void EncenderDisplay7 (int NumeroDisplay) {
+  Serial.println(NumeroDisplay);
+  switch(NumeroDisplay) {
+    case 1:
+      digitalWrite(PinSegmentoA, LOW);
+      digitalWrite(PinSegmentoB, HIGH);
+      digitalWrite(PinSegmentoC, HIGH);
+      digitalWrite(PinSegmentoD, LOW);
+      digitalWrite(PinSegmentoE, LOW);
+      digitalWrite(PinSegmentoF, LOW);
+      digitalWrite(PinSegmentoG, LOW);
+      break;
+    case 2:
+      digitalWrite(PinSegmentoA, HIGH);
+      digitalWrite(PinSegmentoB, HIGH);
+      digitalWrite(PinSegmentoC, LOW);
+      digitalWrite(PinSegmentoD, HIGH);
+      digitalWrite(PinSegmentoE, HIGH);
+      digitalWrite(PinSegmentoF, LOW);
+      digitalWrite(PinSegmentoG, HIGH);
+      break;
+    case 3:
+      digitalWrite(PinSegmentoA, HIGH);
+      digitalWrite(PinSegmentoB, HIGH);
+      digitalWrite(PinSegmentoC, HIGH);
+      digitalWrite(PinSegmentoD, HIGH);
+      digitalWrite(PinSegmentoE, LOW);
+      digitalWrite(PinSegmentoF, LOW);
+      digitalWrite(PinSegmentoG, HIGH);
+      break;
+    case 4:
+      digitalWrite(PinSegmentoA, LOW);
+      digitalWrite(PinSegmentoB, HIGH);
+      digitalWrite(PinSegmentoC, HIGH);
+      digitalWrite(PinSegmentoD, LOW);
+      digitalWrite(PinSegmentoE, LOW);
+      digitalWrite(PinSegmentoF, HIGH);
+      digitalWrite(PinSegmentoG, HIGH);
+      break;
+    case 5:
+      digitalWrite(PinSegmentoA, HIGH);
+      digitalWrite(PinSegmentoB, LOW);
+      digitalWrite(PinSegmentoC, HIGH);
+      digitalWrite(PinSegmentoD, HIGH);
+      digitalWrite(PinSegmentoE, LOW);
+      digitalWrite(PinSegmentoF, HIGH);
+      digitalWrite(PinSegmentoG, HIGH);
+      break;
+    case 6:
+      digitalWrite(PinSegmentoA, HIGH);
+      digitalWrite(PinSegmentoB, LOW);
+      digitalWrite(PinSegmentoC, HIGH);
+      digitalWrite(PinSegmentoD, HIGH);
+      digitalWrite(PinSegmentoE, HIGH);
+      digitalWrite(PinSegmentoF, HIGH);
+      digitalWrite(PinSegmentoG, HIGH);
+      break;
+    case 7:
+      digitalWrite(PinSegmentoA, HIGH);
+      digitalWrite(PinSegmentoB, HIGH);
+      digitalWrite(PinSegmentoC, HIGH);
+      digitalWrite(PinSegmentoD, LOW);
+      digitalWrite(PinSegmentoE, LOW);
+      digitalWrite(PinSegmentoF, LOW);
+      digitalWrite(PinSegmentoG, LOW);
+      break;
+    case 8:
+      digitalWrite(PinSegmentoA, HIGH);
+      digitalWrite(PinSegmentoB, HIGH);
+      digitalWrite(PinSegmentoC, HIGH);
+      digitalWrite(PinSegmentoD, HIGH);
+      digitalWrite(PinSegmentoE, HIGH);
+      digitalWrite(PinSegmentoF, HIGH);
+      digitalWrite(PinSegmentoG, HIGH);
+      break;
+    case 9:
+      digitalWrite(PinSegmentoA, HIGH);
+      digitalWrite(PinSegmentoB, HIGH);
+      digitalWrite(PinSegmentoC, HIGH);
+      digitalWrite(PinSegmentoD, HIGH);
+      digitalWrite(PinSegmentoE, LOW);
+      digitalWrite(PinSegmentoF, HIGH);
+      digitalWrite(PinSegmentoG, HIGH);
+      break;
+    case 0:
+      digitalWrite(PinSegmentoA, HIGH);
+      digitalWrite(PinSegmentoB, HIGH);
+      digitalWrite(PinSegmentoC, HIGH);
+      digitalWrite(PinSegmentoD, HIGH);
+      digitalWrite(PinSegmentoE, HIGH);
+      digitalWrite(PinSegmentoF, HIGH);
+      digitalWrite(PinSegmentoG, LOW);
+      break;
+  }
 }
